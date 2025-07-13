@@ -1,63 +1,98 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Voice Selfie App</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vio - Voice Selfie Agent</title>
   <style>
-    body { font-family: Arial; text-align: center; padding: 40px; background: #f9f9f9; }
-    video, canvas { border: 2px solid #333; margin-top: 20px; }
-    #status { margin-top: 20px; font-size: 1.2em; color: #333; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f172a;
+      color: #fff;
+      text-align: center;
+      padding: 40px;
+    }
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      color: #38bdf8;
+    }
+    #message {
+      margin-bottom: 20px;
+      font-size: 1.2rem;
+    }
+    video, canvas, img {
+      margin-top: 20px;
+      max-width: 100%;
+      border-radius: 10px;
+      border: 2px solid #38bdf8;
+    }
   </style>
 </head>
 <body>
+  <h1>📸 Vio - Your Voice Selfie Agent</h1>
+  <p id="message">Say “Let’s take a selfie” to begin</p>
 
-  <h1>🎤 Voice Selfie Maker</h1>
-  <p>Say: <strong>"Let's take a selfie"</strong></p>
-
-  <video id="video" width="400" autoplay></video>
-  <canvas id="canvas" width="400" height="300" style="display: none;"></canvas>
-  <div id="status">Waiting for voice command...</div>
+  <video id="camera" autoplay playsinline width="320" height="240" style="display:none;"></video>
+  <canvas id="snapshot" width="320" height="240" style="display:none;"></canvas>
+  <img id="photo" alt="Your Selfie will appear here" />
 
   <script>
-    const statusText = document.getElementById('status');
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
+    const message = document.getElementById("message");
+    const video = document.getElementById("camera");
+    const canvas = document.getElementById("snapshot");
+    const photo = document.getElementById("photo");
 
-    // Get Webcam Access
-    navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-      .then(stream => {
-        video.srcObject = stream;
-      })
-      .catch(err => {
-        alert("Camera access denied: " + err.message);
-      });
+    // Setup camera
+    navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
+      video.srcObject = stream;
+      video.style.display = "block";
+    });
 
-    // Voice Recognition Setup
+    // Setup voice recognition
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
-
     recognition.continuous = true;
-    recognition.lang = 'en-US';
-    recognition.start();
+    recognition.lang = "en-US";
 
-    recognition.onresult = function(event) {
+    function takeSelfie() {
+      message.textContent = "📸 Taking your selfie in 3 seconds...";
+      setTimeout(() => {
+        const context = canvas.getContext("2d");
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataURL = canvas.toDataURL("image/png");
+        photo.src = dataURL;
+        message.textContent = "✅ Selfie captured!";
+      }, 3000);
+    }
+
+    function startListening() {
+      try {
+        recognition.start();
+      } catch (e) {
+        // Already started
+      }
+    }
+
+    recognition.onresult = (event) => {
       const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
-      console.log('Heard:', transcript);
-      if (transcript.includes("let's take a selfie") || transcript.includes("lets take a selfie")) {
+      console.log("Voice heard:", transcript);
+      if (transcript.includes("let's take a selfie") || transcript.includes("take a selfie")) {
         takeSelfie();
       }
     };
 
-    function takeSelfie() {
-      statusText.textContent = "📸 Taking selfie in 3 seconds...";
-      setTimeout(() => {
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        canvas.style.display = 'block';
-        statusText.textContent = "✅ Selfie captured!";
-      }, 3000);
-    }
-  </script>
+    recognition.onerror = (event) => {
+      console.warn("Voice recognition error:", event.error);
+      setTimeout(startListening, 2000);
+    };
 
+    recognition.onend = () => {
+      console.log("Voice recognition ended. Restarting...");
+      setTimeout(startListening, 1000);
+    };
+
+    startListening(); // Start it once
+  </script>
 </body>
 </html>

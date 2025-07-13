@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Voice Selfie App</title>
+  <style>
+    body { font-family: Arial; text-align: center; padding: 40px; background: #f9f9f9; }
+    video, canvas { border: 2px solid #333; margin-top: 20px; }
+    #status { margin-top: 20px; font-size: 1.2em; color: #333; }
+  </style>
+</head>
+<body>
+
+  <h1>🎤 Voice Selfie Maker</h1>
+  <p>Say: <strong>"Let's take a selfie"</strong></p>
+
+  <video id="video" width="400" autoplay></video>
+  <canvas id="canvas" width="400" height="300" style="display: none;"></canvas>
+  <div id="status">Waiting for voice command...</div>
+
+  <script>
+    const statusText = document.getElementById('status');
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Get Webcam Access
+    navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+      .then(stream => {
+        video.srcObject = stream;
+      })
+      .catch(err => {
+        alert("Camera access denied: " + err.message);
+      });
+
+    // Voice Recognition Setup
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+
+    recognition.continuous = true;
+    recognition.lang = 'en-US';
+    recognition.start();
+
+    recognition.onresult = function(event) {
+      const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
+      console.log('Heard:', transcript);
+      if (transcript.includes("let's take a selfie") || transcript.includes("lets take a selfie")) {
+        takeSelfie();
+      }
+    };
+
+    function takeSelfie() {
+      statusText.textContent = "📸 Taking selfie in 3 seconds...";
+      setTimeout(() => {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.style.display = 'block';
+        statusText.textContent = "✅ Selfie captured!";
+      }, 3000);
+    }
+  </script>
+
+</body>
+</html>
